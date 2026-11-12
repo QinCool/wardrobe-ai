@@ -5,8 +5,6 @@ const STORE_ITEMS = 'wardrobe-items-v1';
 const STORE_PROFILE = 'wardrobe-profile-v1';
 const STORE_SEEDED = 'wardrobe-seeded-v1';
 
-const CATEGORIES = ['毛衣', 'T恤', '外套', '衬衫', '卫衣', '裤子', '鞋子'];
-
 // 每个分类对应的尺码字段（label -> key），单位厘米，鞋子另有码数字段
 const SIZE_FIELDS = {
   '毛衣': [['衣长', 'length'], ['胸围', 'chest'], ['肩宽', 'shoulder'], ['袖长', 'sleeve']],
@@ -17,8 +15,6 @@ const SIZE_FIELDS = {
   '裤子': [['腰围', 'waist'], ['裤长', 'pantsLength'], ['臀围', 'hip'], ['大腿围', 'thigh'], ['裤脚围', 'hem'], ['上裆长', 'rise'], ['下裆长', 'inseam']],
   '鞋子': [['脚长', 'footLength'], ['中国码', 'sizeCN'], ['EU', 'sizeEU'], ['US', 'sizeUS'], ['UK', 'sizeUK'], ['JP', 'sizeJP']],
 };
-
-const FIT_OPTIONS = ['合身', '略大', '略小', '偏大', '偏小', '未试穿'];
 
 function loadItems() {
   try {
@@ -78,30 +74,4 @@ function parseImport(text) {
   if (!Array.isArray(items)) throw new Error('文件里没有找到 items 数组');
   const profile = data.profile && typeof data.profile === 'object' ? data.profile : {};
   return { items, profile };
-}
-
-// 图片压缩后转 data URL 存本地（不走外链）。超大图先缩到 800px 宽。
-function fileToDataURL(file, maxWidth = 800) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => reject(new Error('读取图片失败'));
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = () => reject(new Error('图片格式无法识别'));
-      img.onload = () => {
-        const scale = Math.min(1, maxWidth / img.width);
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL('image/jpeg', 0.82));
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-function uid() {
-  return 'item-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
 }

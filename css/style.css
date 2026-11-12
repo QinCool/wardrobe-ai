@@ -66,7 +66,6 @@ button.primary {
   color: #fff;
 }
 
-button.danger { color: var(--warn); border-color: #f0c6c2; }
 button:disabled { opacity: 0.5; cursor: wait; }
 button.active { background: var(--ink); color: #fff; border-color: var(--ink); }
 
@@ -154,33 +153,10 @@ label { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px
 .item-actions { display: flex; gap: 8px; margin-top: 10px; }
 .item-actions button { padding: 4px 12px; font-size: 13px; }
 
-/* AI 输出区 */
-.ai-output {
-  white-space: pre-wrap;
-  background: #faf9f6;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px 14px;
-  font-size: 14px;
-  min-height: 60px;
-  margin-top: 12px;
-}
-.ai-output:empty::before { content: "AI 的建议会显示在这里。"; color: var(--muted); }
-
 .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .row > * { flex: 1; min-width: 140px; }
 .row .narrow { flex: 0 0 auto; }
 
 footer { text-align: center; color: var(--muted); font-size: 12px; padding: 24px 0 40px; }
 footer a { color: var(--accent); }
-
-details.settings { margin-top: 8px; }
-details.settings summary { cursor: pointer; font-weight: 600; }
-.notice {
-  border: 1px solid #f0d9a0;
-  background: #fff8e6;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 13px;
-  margin-top: 12px;
-}
+footer button { margin: 0 4px; }
