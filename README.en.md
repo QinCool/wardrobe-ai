@@ -4,6 +4,8 @@
 
 **Product form: chat first, website second.** All interaction happens in your Personal Agent chat: add clothes, check sizes, get daily outfits, pack for trips, and get weather reminders by asking your AI assistant (Muse, Doubao, DeepSeek mobile, and others). This website does one thing only: show your wardrobe as a visual board.
 
+**Best experience on Muse**: the Skill runs natively in Muse chat, the board is a Muse artifact card that opens right in the chat, and daily reminders arrive through Muse scheduled messages. Other AIs work too, through the website link to the same board.
+
 No backend, no account, no sign-up. Data lives only in your own Personal Agent (the wardrobe JSON file or storage your Agent can read); the site holds no data. Open `index.html` to use it, or deploy it to GitHub Pages.
 
 > 中文摘要：聊天为前台、网站为后台的个人衣柜。加衣服、问尺码、穿搭提醒、出差行李都在 Personal Agent 聊天里完成；网站只做衣柜展示看板。无后端、无账号，数据只存在你自己的 Personal Agent 手里；网站不持有数据。

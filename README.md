@@ -4,6 +4,8 @@
 
 **产品形态：聊天为前台，网站为后台。** 所有交互都在 Personal Agent 聊天里完成：加衣服、查尺码、每日穿搭、出差行李、天气提醒都直接问你的 AI 助手（Muse、豆包、DeepSeek 手机版等）。这个网站只做一件事：把衣柜可视化展示出来。
 
+**在 Muse 上使用最适配**：Skill 原生跑在 Muse 聊天里，看板是 Muse 的 artifact 卡片、直接在聊天里打开，每日提醒走 Muse 的定时消息；其他 AI 也能用，给网站链接看同一块看板。
+
 无后端、无账号、不用注册。数据只存在你自己的 Personal Agent 手里（Agent 能读到的衣柜 JSON 文件或存储），网站不持有数据；打开 `index.html` 就能用，也可以部署到 GitHub Pages。
 
 > English summary: chat-first personal wardrobe. Ask your AI assistant for outfits, sizes and packing; the site is just the visual board. No backend, no account, data lives only in your own Personal Agent (the wardrobe JSON file your Agent can read); the site holds no data.
