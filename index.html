@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的衣柜 · Wardrobe AI</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <h1>我的衣柜</h1>
+    <p>Wardrobe AI · 尺码有数，买衣不纠结</p>
+    <span class="spacer"></span>
+    <button type="button" id="export-btn">导出 JSON</button>
+    <label style="margin:0;display:inline-block;">
+      <input type="file" id="import-file" accept=".json,application/json" hidden>
+      <button type="button" onclick="document.getElementById('import-file').click()">导入 JSON</button>
+    </label>
+  </div>
+</header>
+
+<main>
+  <!-- 速查条 -->
+  <section>
+    <div class="quickbar" id="quickbar"></div>
+    <p class="hint">单位：厘米（除注明外）。数字以每件单品的实测记录为准，买新衣服时直接对着挑。</p>
+  </section>
+
+  <!-- 衣柜列表 -->
+  <section id="items-section">
+    <h2>衣柜</h2>
+    <div class="filters">
+      <button type="button" data-filter="全部" class="active">全部</button>
+      <button type="button" data-filter="毛衣">毛衣</button>
+      <button type="button" data-filter="T恤">T恤</button>
+      <button type="button" data-filter="外套">外套</button>
+      <button type="button" data-filter="衬衫">衬衫</button>
+      <button type="button" data-filter="卫衣">卫衣</button>
+      <button type="button" data-filter="裤子">裤子</button>
+      <button type="button" data-filter="鞋子">鞋子</button>
+    </div>
+    <p class="hint" id="item-count"></p>
+    <div class="items" id="items"></div>
+    <p style="margin-top:12px;"><button type="button" id="load-example-btn">载入示例数据</button>
+    <span class="hint">示例数据为占位内容，清空后可录入自己的衣服。</span></p>
+  </section>
+
+  <!-- 添加单品 -->
+  <section>
+    <h2>添加单品</h2>
+    <div class="card">
+      <div class="grid two">
+        <div>
+          <label>单品名称 *</label>
+          <input id="f-name" placeholder="例如：示例针织毛衣">
+        </div>
+        <div>
+          <label>分类</label>
+          <select id="f-category">
+            <option>毛衣</option><option>T恤</option><option>外套</option>
+            <option>衬衫</option><option>卫衣</option><option>裤子</option><option>鞋子</option>
+          </select>
+        </div>
+        <div>
+          <label>品牌（可选）</label>
+          <input id="f-brand" placeholder="例如：示例品牌">
+        </div>
+        <div>
+          <label>价格（可选，元）</label>
+          <input id="f-price" inputmode="decimal" placeholder="例如：299">
+        </div>
+      </div>
+
+      <label>照片（上传后压缩存本地，不走外链）</label>
+      <input type="file" id="f-photo" accept="image/*">
+      <div id="photo-preview" style="margin-top:8px;"></div>
+
+      <h3 style="margin-top:16px;">尺码</h3>
+      <div class="grid two" id="size-inputs"></div>
+
+      <div class="grid two">
+        <div>
+          <label>合身情况</label>
+          <select id="f-fit">
+            <option>合身</option><option>略大</option><option>略小</option>
+            <option>偏大</option><option>偏小</option><option>未试穿</option>
+          </select>
+        </div>
+        <div>
+          <label>备注（可选）</label>
+          <input id="f-note" placeholder="例如：袖子略长，卷起来穿">
+        </div>
+      </div>
+
+      <details class="settings">
+        <summary>AI 辅助录入：粘贴尺码表文字或商品链接，自动填好上面的尺码</summary>
+        <label>商品链接（可选）</label>
+        <input id="ai-link" placeholder="粘贴淘宝 / 京东 / 拼多多 / 抖音等商品链接">
+        <label>尺码表文字（粘贴商品页里的尺码表）</label>
+        <textarea id="ai-paste" rows="5" placeholder="例如：&#10;L码 衣长 68 胸围 116 肩宽 56 袖长 53&#10;XL码 衣长 70 胸围 120 肩宽 58 袖长 55"></textarea>
+        <p class="hint">链接说明：多数电商商品页需登录或防跨域，应用不一定能直接读取；读不到时会提示你粘贴尺码表文字，或把购买截图发给助手，由助手去平台查官方尺码表再填。AI 填好后请务必核对数字再保存。</p>
+        <div class="row">
+          <button type="button" id="ai-parse-btn" class="narrow">AI 解析并填表</button>
+          <span class="hint" id="ai-parse-status"></span>
+        </div>
+      </details>
+
+      <div class="row" style="margin-top:16px;">
+        <button type="button" id="save-item-btn" class="primary narrow">保存单品</button>
+        <span class="hint">保存后立即显示在上方衣柜里。</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 尺码建议 -->
+  <section>
+    <h2>买新衣服 · AI 尺码建议</h2>
+    <div class="card">
+      <p class="hint">把新商品的尺码表粘贴进来，AI 会拿你衣柜里同分类已合身单品的实测数据逐项对照，告诉你买哪个码。</p>
+      <div class="row">
+        <div>
+          <label>商品分类</label>
+          <select id="size-advice-category">
+            <option>毛衣</option><option>T恤</option><option>外套</option>
+            <option>衬衫</option><option>卫衣</option><option>裤子</option><option>鞋子</option>
+          </select>
+        </div>
+      </div>
+      <label>新商品的尺码表</label>
+      <textarea id="size-advice-chart" rows="5" placeholder="粘贴商品页的尺码表，例如各码的衣长 / 胸围 / 肩宽 / 袖长"></textarea>
+      <div class="row" style="margin-top:12px;">
+        <button type="button" id="size-advice-btn" class="primary narrow">问 AI 买哪个码</button>
+      </div>
+      <div class="ai-output" id="size-advice-output"></div>
+    </div>
+  </section>
+
+  <!-- 每日穿搭 -->
+  <section>
+    <h2>今日穿搭 · AI 搭配</h2>
+    <div class="card">
+      <p class="hint">根据今天的天气，从你的衣柜里搭一套。天气默认用 Open-Meteo（免费、无需 Key）；查不到时可手动输入。</p>
+      <div class="row">
+        <div>
+          <label>城市</label>
+          <input id="outfit-city" placeholder="例如：南京" value="南京">
+        </div>
+        <div class="narrow" style="align-self:end;">
+          <label style="display:inline;"><input type="checkbox" id="outfit-manual" style="width:auto;"> 手动输入天气</label>
+        </div>
+      </div>
+      <div id="manual-weather" style="display:none;">
+        <div class="row">
+          <div>
+            <label>气温（℃）</label>
+            <input id="manual-temp" inputmode="decimal" placeholder="例如：18">
+          </div>
+          <div class="narrow" style="align-self:end;">
+            <label style="display:inline;"><input type="checkbox" id="manual-rain" style="width:auto;"> 今天有雨</label>
+          </div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button type="button" id="outfit-btn" class="primary narrow">今天穿什么</button>
+      </div>
+      <div class="ai-output" id="outfit-output"></div>
+    </div>
+  </section>
+
+  <!-- AI 设置 -->
+  <section>
+    <h2>AI 设置</h2>
+    <div class="card">
+      <p class="hint">尺码建议、每日穿搭、AI 辅助录入都要走这里配置的 AI。支持任何 OpenAI 兼容接口：填自己的 Key 就行；也可以选 Muse（Meta Model API）。Key 只存在你浏览器的 localStorage 里，不会上传到任何地方，更不会进仓库。</p>
+      <label>服务商</label>
+      <select id="ai-provider"></select>
+      <p class="hint" id="ai-preset-hint"></p>
+      <label>Base URL</label>
+      <input id="ai-baseurl" placeholder="例如：https://api.deepseek.com/v1">
+      <label>API Key</label>
+      <input id="ai-apikey" type="password" placeholder="粘贴你的 Key，只存本地">
+      <label>模型名</label>
+      <input id="ai-model" placeholder="例如：deepseek-chat / muse-spark-1.3">
+      <div class="row" style="margin-top:12px;">
+        <button type="button" id="ai-save-btn" class="narrow">保存设置</button>
+        <button type="button" id="ai-test-btn" class="narrow">测试连接</button>
+        <span class="hint" id="ai-settings-status"></span>
+      </div>
+      <div class="notice">提醒：Muse 的 Key 去 dev.meta.ai 申请（Meta Model API，模型 muse-spark-1.3）。Key 开通可能有地区与审核要求，以官方页面为准；若暂无 Key，先用 DeepSeek 等其他兼容接口即可，功能完全一样。</div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Wardrobe AI · 静态页面，无后端、无账号，数据只在你的浏览器里。<br>
+  <a href="https://github.com/QinCool/wardrobe-ai">GitHub：QinCool/wardrobe-ai</a>
+</footer>
+
+<script src="js/store.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/weather.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
