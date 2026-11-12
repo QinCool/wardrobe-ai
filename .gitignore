@@ -12,3 +12,4 @@ wardrobe-backup-*.json
 # 系统文件
 .DS_Store
 Thumbs.db
+data/wardrobe-cool.json
