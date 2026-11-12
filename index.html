@@ -12,6 +12,12 @@
     <h1>我的衣柜</h1>
     <p>Wardrobe AI · 尺码有数，买衣不纠结</p>
     <span class="spacer"></span>
+    <label class="unit-toggle" style="margin:0;display:inline-flex;align-items:center;gap:6px;">显示单位
+      <select id="unit-select" style="width:auto;">
+        <option value="cm">厘米 cm</option>
+        <option value="inch">英寸 inch</option>
+      </select>
+    </label>
     <button type="button" id="export-btn">导出 JSON</button>
     <label style="margin:0;display:inline-block;">
       <input type="file" id="import-file" accept=".json,application/json" hidden>
@@ -24,7 +30,7 @@
   <!-- 速查条 -->
   <section>
     <div class="quickbar" id="quickbar"></div>
-    <p class="hint">单位：厘米（除注明外）。数字以每件单品的实测记录为准，买新衣服时直接对着挑。</p>
+    <p class="hint">尺寸默认以厘米（cm）存储；切到英寸（inch）时页面上的尺寸会自动换算显示（1 英寸 = 2.54 厘米），存的数据不变。数字以每件单品的实测记录为准，买新衣服时直接对着挑。</p>
   </section>
 
   <!-- 衣柜列表 -->
@@ -67,8 +73,18 @@
           <input id="f-brand" placeholder="例如：示例品牌">
         </div>
         <div>
-          <label>价格（可选，元）</label>
-          <input id="f-price" inputmode="decimal" placeholder="例如：299">
+          <label>价格（可选）</label>
+          <div class="row" style="gap:8px;">
+            <input id="f-price" inputmode="decimal" placeholder="例如：299" style="flex:1;">
+            <select id="f-currency" style="flex:0 0 96px;">
+              <option value="CNY">CNY ¥</option>
+              <option value="USD">USD $</option>
+              <option value="EUR">EUR €</option>
+              <option value="GBP">GBP £</option>
+              <option value="JPY">JPY ¥</option>
+              <option value="KRW">KRW ₩</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -96,10 +112,10 @@
       <details class="settings">
         <summary>AI 辅助录入：粘贴尺码表文字或商品链接，自动填好上面的尺码</summary>
         <label>商品链接（可选）</label>
-        <input id="ai-link" placeholder="粘贴淘宝 / 京东 / 拼多多 / 抖音等商品链接">
+        <input id="ai-link" placeholder="粘贴淘宝 / 京东 / 拼多多 / 抖音，或 Amazon / Nike / adidas / Uniqlo 美国站 / Gap 等商品链接">
         <label>尺码表文字（粘贴商品页里的尺码表）</label>
-        <textarea id="ai-paste" rows="5" placeholder="例如：&#10;L码 衣长 68 胸围 116 肩宽 56 袖长 53&#10;XL码 衣长 70 胸围 120 肩宽 58 袖长 55"></textarea>
-        <p class="hint">链接说明：多数电商商品页需登录或防跨域，应用不一定能直接读取；读不到时会提示你粘贴尺码表文字，或把购买截图发给助手，由助手去平台查官方尺码表再填。AI 填好后请务必核对数字再保存。</p>
+        <textarea id="ai-paste" rows="5" placeholder="例如：&#10;L码 衣长 68 胸围 116 肩宽 56 袖长 53&#10;美国站尺码表也行，如：M Chest 22&quot; Length 28&quot;（英寸会自动换算成厘米）"></textarea>
+        <p class="hint">链接说明：多数电商商品页需登录或防跨域，应用不一定能直接读取；读不到时会提示你粘贴尺码表文字，或把购买截图发给助手，由助手去平台查官方尺码表再填。国外站点的尺码表常用英寸（inch），AI 解析时会自动换算成厘米存入，并注明原单位。AI 填好后请务必核对数字再保存。</p>
         <div class="row">
           <button type="button" id="ai-parse-btn" class="narrow">AI 解析并填表</button>
           <span class="hint" id="ai-parse-status"></span>
@@ -117,7 +133,7 @@
   <section>
     <h2>买新衣服 · AI 尺码建议</h2>
     <div class="card">
-      <p class="hint">把新商品的尺码表粘贴进来，AI 会拿你衣柜里同分类已合身单品的实测数据逐项对照，告诉你买哪个码。</p>
+      <p class="hint">把新商品的尺码表粘贴进来，AI 会拿你衣柜里同分类已合身单品的实测数据逐项对照，告诉你买哪个码。国外站点的尺码表如果是英寸（inch），AI 会先换算成厘米再对照，并在建议里注明原单位与换算。</p>
       <div class="row">
         <div>
           <label>商品分类</label>
@@ -126,9 +142,36 @@
             <option>衬衫</option><option>卫衣</option><option>裤子</option><option>鞋子</option>
           </select>
         </div>
+        <div>
+          <label>商品来源</label>
+          <select id="size-advice-region">
+            <option value="cn">国内平台（淘宝 / 京东 / 拼多多 / 抖音等）</option>
+            <option value="intl">美国 / 国际站点（Amazon / Nike / adidas / Uniqlo US / Gap 等）</option>
+          </select>
+        </div>
       </div>
       <label>新商品的尺码表</label>
-      <textarea id="size-advice-chart" rows="5" placeholder="粘贴商品页的尺码表，例如各码的衣长 / 胸围 / 肩宽 / 袖长"></textarea>
+      <textarea id="size-advice-chart" rows="5" placeholder="粘贴商品页的尺码表，例如各码的衣长 / 胸围 / 肩宽 / 袖长；美国站常为英寸，如 Chest 22&quot; Length 28&quot;"></textarea>
+      <details class="settings">
+        <summary>鞋码换算：按脚长查 US / EU / UK / JP 对照</summary>
+        <div class="row">
+          <div>
+            <label>脚长（cm）</label>
+            <input id="shoe-foot" inputmode="decimal" placeholder="例如：25.5">
+          </div>
+          <div>
+            <label>款式</label>
+            <select id="shoe-gender">
+              <option value="men">男款</option>
+              <option value="women">女款</option>
+            </select>
+          </div>
+          <div class="narrow" style="align-self:end;">
+            <button type="button" id="shoe-convert-btn" class="narrow">换算</button>
+          </div>
+        </div>
+        <p class="hint" id="shoe-convert-output">对照以脚长为准，各品牌鞋楦略有差异，同一脚长在不同品牌间常差半码，最终以品牌官方尺码表为准。</p>
+      </details>
       <div class="row" style="margin-top:12px;">
         <button type="button" id="size-advice-btn" class="primary narrow">问 AI 买哪个码</button>
       </div>
@@ -140,7 +183,7 @@
   <section>
     <h2>今日穿搭 · AI 搭配</h2>
     <div class="card">
-      <p class="hint">根据今天的天气，从你的衣柜里搭一套。天气默认用 Open-Meteo（免费、无需 Key）；查不到时可手动输入。</p>
+      <p class="hint">根据今天的天气和行程，从你的衣柜里搭一套。天气默认用 Open-Meteo（免费、无需 Key）；查不到时可手动输入。</p>
       <div class="row">
         <div>
           <label>城市</label>
@@ -161,10 +204,94 @@
           </div>
         </div>
       </div>
+
+      <h3 style="margin-top:16px;">今日行程（可选，让搭配更贴合安排）</h3>
+      <div class="row">
+        <div>
+          <label>主要场合</label>
+          <select id="schedule-occasion">
+            <option value="">不指定</option>
+            <option value="上班">上班</option>
+            <option value="开会">开会</option>
+            <option value="运动">运动 / 健身</option>
+            <option value="正式">正式场合</option>
+            <option value="休闲">休闲</option>
+            <option value="约会">约会</option>
+          </select>
+        </div>
+        <div>
+          <label>行程文字（可选）</label>
+          <input id="schedule-text" placeholder="例如：下午 3 点开会，晚上去健身">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>导入日历 .ics 文件（可选，自动取今日日程）</label>
+          <input type="file" id="schedule-ics" accept=".ics,text/calendar">
+        </div>
+      </div>
+      <p class="hint" id="schedule-events" style="white-space:pre-wrap;"></p>
+      <details class="settings">
+        <summary>Google 日历（可选，只读）</summary>
+        <p class="hint">在 Google Cloud Console 建一个 OAuth 客户端（Web 应用类型），把 Client ID 填进来，点「连接 Google 日历」授权；应用只读你今天的日程。详细步骤见 README「日历与行程」一节。注意：需页面跑在 http(s) 上（如 GitHub Pages），直接用 file:// 打开时授权回调无效。</p>
+        <label>Google OAuth Client ID</label>
+        <input id="gcal-client-id" placeholder="xxx.apps.googleusercontent.com">
+        <div class="row" style="margin-top:12px;">
+          <button type="button" id="gcal-connect-btn" class="narrow">连接 Google 日历</button>
+          <button type="button" id="gcal-disconnect-btn" class="narrow">断开</button>
+          <span class="hint" id="gcal-status"></span>
+        </div>
+      </details>
       <div class="row" style="margin-top:12px;">
         <button type="button" id="outfit-btn" class="primary narrow">今天穿什么</button>
       </div>
       <div class="ai-output" id="outfit-output"></div>
+    </div>
+  </section>
+
+  <!-- 出差 / 旅行 -->
+  <section>
+    <h2>出差 / 旅行 · 行李与穿搭</h2>
+    <div class="card">
+      <p class="hint">填一次出行，按目的地天气和当地安排，给出每天穿搭 + 行李清单。行程也可从日历里自动识别（多日事件 + 地点）。目的地天气按出发城市以外的目的地城市查。</p>
+      <div class="row">
+        <div>
+          <label>目的地城市</label>
+          <input id="trip-city" placeholder="例如：上海 / Tokyo">
+        </div>
+        <div>
+          <label>出发日期</label>
+          <input id="trip-start" type="date">
+        </div>
+        <div>
+          <label>返回日期</label>
+          <input id="trip-end" type="date">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>当地场合（可选）</label>
+          <select id="trip-occasion">
+            <option value="">不指定</option>
+            <option value="上班">上班</option>
+            <option value="开会">开会</option>
+            <option value="运动">运动 / 健身</option>
+            <option value="正式">正式场合</option>
+            <option value="休闲">休闲 / 观光</option>
+            <option value="约会">约会</option>
+          </select>
+        </div>
+        <div>
+          <label>当地行程说明（可选）</label>
+          <input id="trip-notes" placeholder="例如：第一天见客户，第二天团建爬山">
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px;">
+        <button type="button" id="trip-detect-btn" class="narrow">从日历识别出行</button>
+        <button type="button" id="trip-btn" class="primary narrow">生成行李与穿搭建议</button>
+        <span class="hint" id="trip-detect-status"></span>
+      </div>
+      <div class="ai-output" id="trip-output"></div>
     </div>
   </section>
 
@@ -187,7 +314,7 @@
         <button type="button" id="ai-test-btn" class="narrow">测试连接</button>
         <span class="hint" id="ai-settings-status"></span>
       </div>
-      <div class="notice">提醒：Muse 的 Key 去 dev.meta.ai 申请（Meta Model API，模型 muse-spark-1.3）。Key 开通可能有地区与审核要求，以官方页面为准；若暂无 Key，先用 DeepSeek 等其他兼容接口即可，功能完全一样。</div>
+      <div class="notice">提醒：Muse 的 Key 去 dev.meta.ai 申请（Meta Model API，模型 muse-spark-1.3）。Key 开通可能有地区与审核要求，以官方页面为准；若暂无 Key，先用 DeepSeek 等其他兼容接口即可，功能完全一样。<br>Anthropic Claude 官方 API 不是 OpenAI 兼容格式，不能直连本应用；如需用 Claude，请经支持 OpenAI 兼容格式的中转服务，再选「自定义 OpenAI 兼容接口」填中转地址。</div>
     </div>
   </section>
 </main>
@@ -198,6 +325,8 @@
 </footer>
 
 <script src="js/store.js"></script>
+<script src="js/units.js"></script>
+<script src="js/calendar.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/weather.js"></script>
 <script src="js/app.js"></script>

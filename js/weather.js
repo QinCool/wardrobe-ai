@@ -38,3 +38,47 @@ function weatherSummary(w) {
   const rain = w.precipProb === null || w.precipProb === undefined ? '' : '，降水概率 ' + w.precipProb + '%';
   return w.city + ' 今天 ' + w.condition + '，' + w.tempMin + '～' + w.tempMax + '℃' + rain;
 }
+
+// 目的地多日预报：从 startDate 起连续 days 天（Open-Meteo 预报最多未来 16 天）
+// 返回 { city, days: [{ date, tempMax, tempMin, precipProb, condition }] }
+async function fetchWeatherForecast(city, days, startDate) {
+  const geoRes = await fetch(
+    'https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(city) + '&count=1&language=zh&format=json'
+  );
+  if (!geoRes.ok) throw new Error('城市查询失败，请检查网络。');
+  const geo = await geoRes.json();
+  if (!geo.results || !geo.results.length) throw new Error('找不到城市「' + city + '」，请换个写法（例如只写城市名，不要带区县或场馆名）。');
+  const place = geo.results[0];
+  const startStr = startDate.toISOString().slice(0, 10);
+  const end = new Date(startDate);
+  end.setDate(end.getDate() + days - 1);
+  const endStr = end.toISOString().slice(0, 10);
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + place.latitude +
+    '&longitude=' + place.longitude +
+    '&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weathercode' +
+    '&timezone=auto&start_date=' + startStr + '&end_date=' + endStr;
+  const wRes = await fetch(url);
+  if (!wRes.ok) throw new Error('天气接口请求失败。');
+  const w = await wRes.json();
+  const d = w.daily;
+  const out = { city: place.name + '（' + (place.admin1 || place.country || '') + '）', days: [] };
+  if (!d || !d.time) return out;
+  for (let i = 0; i < d.time.length; i++) {
+    out.days.push({
+      date: d.time[i],
+      tempMax: d.temperature_2m_max[i],
+      tempMin: d.temperature_2m_min[i],
+      precipProb: d.precipitation_probability_max ? d.precipitation_probability_max[i] : null,
+      condition: WEATHER_CODE_ZH[d.weathercode[i]] || '天气代码 ' + d.weathercode[i],
+    });
+  }
+  return out;
+}
+
+function forecastSummary(fc) {
+  if (!fc.days.length) return fc.city + '：该日期超出天气预报范围。';
+  return fc.city + '：\n' + fc.days.map((day) =>
+    day.date + ' ' + day.condition + '，' + day.tempMin + '～' + day.tempMax + '℃' +
+    (day.precipProb === null || day.precipProb === undefined ? '' : '，降水概率 ' + day.precipProb + '%')
+  ).join('\n');
+}

@@ -6,6 +6,11 @@ const STORE_AI = 'wardrobe-ai-settings-v1';
 const PROVIDER_PRESETS = {
   custom: { label: '自定义 OpenAI 兼容接口', baseUrl: '', model: '', hint: '填入服务商的 Base URL、Key 和模型名，例如 OpenAI、DeepSeek、通义、智谱等。' },
   deepseek: { label: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat', hint: 'Key 去 platform.deepseek.com 申请。' },
+  openai: { label: 'OpenAI', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', hint: 'Key 去 platform.openai.com 申请；需要更强效果可把模型改成 gpt-4o。' },
+  qwen: { label: 'Qwen 通义千问', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus', hint: 'Key 去阿里云百炼控制台（bailian.console.aliyun.com）申请。' },
+  kimi: { label: 'Kimi / Moonshot', baseUrl: 'https://api.moonshot.cn/v1', model: 'kimi-k3.1-pro', hint: 'Key 去 platform.moonshot.cn 申请。注意：K2 系列将于 2026 年底退役，新用户请用 kimi-k3.1-pro；海外用户可用 api.moonshot.ai/v1。' },
+  glm: { label: 'GLM 智谱', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4-plus', hint: 'Key 去 open.bigmodel.cn（智谱开放平台）申请。' },
+  gemini: { label: 'Google Gemini（OpenAI 兼容端点）', baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai/', model: 'gemini-2.5-flash', hint: '走 Google 的 OpenAI 兼容端点，Key 去 Google AI Studio（aistudio.google.com）申请。' },
   muse: { label: 'Muse（Meta Model API）', baseUrl: 'https://api.meta.ai/v1', model: 'muse-spark-1.3', hint: 'Key 去 dev.meta.ai 申请（Meta Model API）。注意：Meta 的 Key 开通可能有地区与审核要求，以官方页面为准；若暂无 Key，可先用 DeepSeek 等其他兼容接口。' },
 };
 
