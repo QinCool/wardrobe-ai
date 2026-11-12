@@ -1,5 +1,7 @@
 # 我的衣柜 · Wardrobe AI
 
+[English](README.en.md)
+
 一个静态的个人衣柜管理页：把衣服、裤子、鞋子的照片、尺码和合身情况记下来，买新衣服时让 AI 对照着给尺码建议，每天早上按天气和行程给你搭一套；支持国内与美国 / 国际购物网站。
 
 无后端、无账号、不用注册。数据只存在你的浏览器（localStorage），打开 `index.html` 就能用，也可以部署到 GitHub Pages。
@@ -214,6 +216,7 @@ wardrobe-ai/
 │   └── app.js                  # 主逻辑：渲染、录入、AI 解析、尺码建议、穿搭
 ├── data/example-wardrobe.json  # 示例数据（占位）
 ├── README.md
+├── README.en.md                # 英文版说明
 ├── LICENSE                     # MIT
 └── .gitignore
 ```
