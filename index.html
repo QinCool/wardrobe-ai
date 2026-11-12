@@ -11,13 +11,6 @@
   <div class="top-inner">
     <h1>我的衣柜</h1>
     <p>Wardrobe AI · 尺码有数，买衣不纠结</p>
-    <span class="spacer"></span>
-    <label class="unit-toggle" style="margin:0;display:inline-flex;align-items:center;gap:6px;">显示单位
-      <select id="unit-select" style="width:auto;">
-        <option value="cm">厘米 cm</option>
-        <option value="inch">英寸 inch</option>
-      </select>
-    </label>
   </div>
 </header>
 
@@ -25,7 +18,7 @@
   <!-- 速查条 -->
   <section>
     <div class="quickbar" id="quickbar"></div>
-    <p class="hint">尺寸默认以厘米（cm）存储；切到英寸（inch）时页面上的尺寸会自动换算显示（1 英寸 = 2.54 厘米），存的数据不变。数字以每件单品的实测记录为准，买新衣服时直接对着挑。</p>
+    <p class="hint">尺寸单位为厘米（cm）。数字以每件单品的实测记录为准，买新衣服时直接对着挑。</p>
   </section>
 
   <!-- 衣柜列表 -->
@@ -55,12 +48,11 @@
     <button type="button" onclick="document.getElementById('import-file').click()">导入 JSON</button>
   </label>
   <br><br>
-  Wardrobe AI · 静态展示页，无后端、无账号，数据只在你的浏览器里。加衣服、尺码建议、穿搭提醒都在 Personal Agent 聊天里完成。<br>
+  Wardrobe AI · 静态展示页，无后端、无账号。数据只在你自己的 Personal Agent 手里，网站不持有数据；浏览器里只是用于展示的临时副本。加衣服、尺码建议、穿搭提醒都在 Personal Agent 聊天里完成。<br>
   <a href="https://github.com/QinCool/wardrobe-ai">GitHub：QinCool/wardrobe-ai</a>
 </footer>
 
 <script src="js/store.js"></script>
-<script src="js/units.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

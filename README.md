@@ -4,21 +4,21 @@
 
 **产品形态：聊天为前台，网站为后台。** 所有交互都在 Personal Agent 聊天里完成：加衣服、查尺码、每日穿搭、出差行李、天气提醒都直接问你的 AI 助手（Muse、豆包、DeepSeek 手机版等）。这个网站只做一件事：把衣柜可视化展示出来。
 
-无后端、无账号、不用注册。数据只存在你的浏览器（localStorage），打开 `index.html` 就能用，也可以部署到 GitHub Pages。
+无后端、无账号、不用注册。数据只存在你自己的 Personal Agent 手里（Agent 能读到的衣柜 JSON 文件或存储），网站不持有数据；打开 `index.html` 就能用，也可以部署到 GitHub Pages。
 
-> English summary: chat-first personal wardrobe. Ask your AI assistant for outfits, sizes and packing; the site is just the visual board. No backend, no account, data stays in your browser (localStorage).
+> English summary: chat-first personal wardrobe. Ask your AI assistant for outfits, sizes and packing; the site is just the visual board. No backend, no account, data lives only in your own Personal Agent (the wardrobe JSON file your Agent can read); the site holds no data.
 
 ## 用法：直接在聊天里问
 
 本项目配有一个 Skill（`skills/wardrobe-ai/`），把它装进你的 Personal Agent，就能在聊天里用：
 
-- **看衣柜**：问“我的衣柜有哪些衣服”，助手按分类列出来，也可以打开网站看板浏览。
+- **看衣柜**：问“我的衣柜有哪些衣服”，用 Muse 时助手把衣柜展示成一个看板（Muse 的 artifact 看板卡片），直接在聊天里打开看；用其他 AI（豆包、DeepSeek、ChatGPT 等）时，助手直接给网站链接，你打开网页看同一块看板。
 - **加衣服鞋子**：发购买截图或商品链接，或者口头说一声，助手去平台查官方尺码表，核对后写进衣柜。
 - **买新衣服问尺码**：发商品链接或尺码表，助手拿你衣柜里合身单品的实测数据逐项对照，告诉你买哪个码。
 - **每日穿搭**：每天早上助手直接在聊天里提醒你：今天天气、穿哪件、为什么。
 - **出差 / 旅行**：说一声目的地和日期，助手按当地天气给每天穿搭 + 行李清单。
 
-你不需要每天打开这个网站看提醒。网站只是衣柜的看板和数据底子。
+你不需要每天打开这个网站看提醒。网站只是衣柜的看板。
 
 ## 录入方式
 
@@ -34,7 +34,7 @@
 
 ## 网站只做什么
 
-- **衣柜看板**：按毛衣 / T恤 / 外套 / 衬衫 / 卫衣 / 裤子 / 鞋子分类筛选，每件带照片、尺码、合身备注；顶部速查条放身体数据（脚长、鞋码、裤腰、上衣常穿码）；尺寸显示可在厘米 / 英寸间切换。
+- **衣柜看板**：按毛衣 / T恤 / 外套 / 衬衫 / 卫衣 / 裤子 / 鞋子分类筛选，每件带照片、尺码、合身备注；顶部速查条放身体数据（脚长、鞋码、裤腰、上衣常穿码）。
 - **JSON 导入 / 导出**（页脚两个按钮）：把衣柜数据导进来看，或导出备份、换设备迁移。
 
 网站只做展示，其他功能都在聊天里的 Skill 那边。
@@ -95,6 +95,18 @@
 
 用 Skill 时，你不需要再为天气、日历、邮箱单独申请 Key 或注册 OAuth 应用：Agent 里有什么权限就用什么。Agent 没接的，助手会提示你去接，或者改用粘贴文字、截图识别这些不用权限的路子。
 
+## 配置与调用都走 Agent
+
+- 所有配置（城市、天气偏好、提醒时间、其他设置）都走 Skill，存在你自己的 Personal Agent 里，不存在网站、不存浏览器。网站没有任何配置项，不用在网站上设置任何东西；想改配置直接在聊天里跟 Agent 说一声。
+- 所有调用（查天气、读日历、读邮箱、给尺码建议、给穿搭）也都由你自己的 AI 发起和执行，不走网站、不走第三方服务。
+- 网站只做一件事：把衣柜可视化展示出来。
+
+## 展示分两种：Muse 看板，其他 AI 给网站链接
+
+- 用 Muse 时：助手把衣柜展示成一个看板（Muse 的 artifact 看板卡片），直接在聊天里打开看。
+- 用其他 AI（豆包、DeepSeek、ChatGPT 等）时：助手直接给网站链接，你打开网页看同一块看板，链接就是 GitHub Pages 地址（`https://<你的用户名>.github.io/wardrobe-ai/`）。
+- 两种展示看到的内容是一样的（同一套衣柜数据、同一套卡片信息），只是载体不同：Muse 有看板卡片，其他 AI 用网页看同一块看板。
+
 ## 本地运行 / 部署
 
 ```bash
@@ -110,9 +122,9 @@ GitHub Pages：仓库 Settings → Pages → Branch 选 `main`、目录选 `/ (r
 
 ## 数据与隐私
 
-- 所有数据（衣物、照片、身体数据）默认只存在浏览器 localStorage，不上传到任何服务器。
-- 照片存在本地 data URL；localStorage 一般上限约 5MB，照片很多时建议定期用「导出 JSON」备份。
-- **不要把真实个人信息提交到公开仓库**：示例数据（`data/example-wardrobe.json`）是占位内容；你自己的数据只留在本地浏览器和你自己的备份文件里。
+- **数据只存在你自己的 Personal Agent 手里**（Agent 能读到的衣柜 JSON 文件或存储）；网站不持有数据，浏览器 localStorage 只是打开网站时用于展示的临时副本，换设备、清缓存就没了，网站本身不保存、不同步、不备份用户数据；Agent 与网站之间需要看板时，由你把 JSON 导进网站看，看完即走，数据归属不变。
+- 照片存在本地 data URL；localStorage 一般上限约 5MB，照片很多时展示用的副本可能放不下，以 Agent 手里的 JSON 为准。
+- **不要把真实个人信息提交到公开仓库**：示例数据（`data/example-wardrobe.json`）是占位内容；你自己的数据只留在你自己的 Personal Agent 手里和你自己的备份文件里。
 - `.gitignore` 已排除 `.env`、以 `*-private.json` / `*-backup-*.json` 结尾的备份文件以及本地真实衣柜数据文件；导出的备份文件不要直接放进仓库。
 
 ## 目录结构
@@ -122,9 +134,8 @@ wardrobe-ai/
 ├── index.html                  # 展示页：衣柜看板
 ├── css/style.css               # 样式
 ├── js/
-│   ├── store.js                # 数据层：localStorage、导入导出
-│   ├── units.js                # 单位换算：厘米/英寸、币种符号
-│   └── app.js                  # 主逻辑：渲染、筛选、单位切换
+│   ├── store.js                # 展示缓存：localStorage、导入导出
+│   └── app.js                  # 主逻辑：渲染、筛选
 ├── data/example-wardrobe.json  # 示例数据（占位）
 ├── skills/wardrobe-ai/         # Skill：聊天里的交互逻辑
 │   ├── SKILL.md                # 聊天前台：展示、加衣服、尺码建议、穿搭提醒、出差行李

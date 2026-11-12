@@ -1,4 +1,5 @@
-// 数据层：衣物 + 身体速查数据，全部存在浏览器 localStorage，不走任何服务器。
+// 展示缓存：导入的衣柜 JSON 存在浏览器 localStorage 只为了显示，不走任何服务器；
+// 数据以 Agent 手里的衣柜 JSON 文件为准，网站不持有数据。
 // 导出/导入用 JSON 文件，方便备份与迁移。
 
 const STORE_ITEMS = 'wardrobe-items-v1';

@@ -1,4 +1,4 @@
-// 主逻辑：衣柜看板渲染、分类筛选、单位切换、JSON 导入导出。
+// 主逻辑：衣柜看板渲染、分类筛选、JSON 导入导出。
 // 本页只做展示：加衣服、尺码建议、每日穿搭、出差行李都在 Personal Agent
 // 聊天里由 Skill 完成，不在本页做。
 
@@ -8,15 +8,14 @@ let currentFilter = '全部';
 
 const $ = (id) => document.getElementById(id);
 
-// ---------- 单位显示：库里一律存厘米，显示可切英寸 ----------
-function unitSuffix() { return profile.unit === 'inch' ? '″' : ''; }
+// ---------- 尺寸显示：单位一律为厘米 ----------
 function displayLen(cmValue) {
   if (cmValue === undefined || cmValue === null || cmValue === '') return '';
-  return profile.unit === 'inch' ? cmToInch(cmValue) : String(cmValue);
+  return String(cmValue);
 }
 function displayLenWithUnit(cmValue) {
   const v = displayLen(cmValue);
-  return v === '' ? '' : v + (profile.unit === 'inch' ? '″' : 'cm');
+  return v === '' ? '' : v + 'cm';
 }
 
 // 长度类字段（显示时按单位换算）；鞋码等码数字段不换算
@@ -38,7 +37,7 @@ function itemSizesHTML(item) {
     .filter(([label, key]) => item.measurements && item.measurements[key] !== undefined && item.measurements[key] !== '')
     .map(([label, key]) => {
       const raw = item.measurements[key];
-      const shown = LENGTH_KEYS.includes(key) ? displayLen(raw) + unitSuffix() : raw;
+      const shown = LENGTH_KEYS.includes(key) ? displayLen(raw) : raw;
       return '<span>' + label + ' ' + shown + '</span>';
     })
     .join('');
@@ -74,6 +73,13 @@ function escapeHTML(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+const CURRENCY_SYMBOLS = { CNY: '¥', USD: '$', EUR: '€', GBP: '£', JPY: '¥', KRW: '₩' };
+function formatPrice(value, currency) {
+  if (value === undefined || value === null || String(value).trim() === '') return '';
+  const symbol = CURRENCY_SYMBOLS[currency] || '';
+  return symbol + value + (currency && currency !== 'CNY' ? ' ' + currency : '');
+}
+
 // ---------- 初始化 ----------
 document.addEventListener('DOMContentLoaded', async () => {
   await seedExampleIfEmpty();
@@ -82,16 +88,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderQuickbar();
   renderItems();
-
-  // 显示单位切换（cm / inch）：只改显示，库里存的厘米不变
-  const unitSel = $('unit-select');
-  unitSel.value = profile.unit || 'cm';
-  unitSel.onchange = () => {
-    profile.unit = unitSel.value;
-    saveProfile(profile);
-    renderQuickbar();
-    renderItems();
-  };
 
   // 分类筛选
   document.querySelectorAll('[data-filter]').forEach((btn) => {
