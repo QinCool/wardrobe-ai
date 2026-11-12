@@ -1,0 +1,5 @@
+name: "wardrobe-ai"
+title: "Wardrobe AI"
+description: "Manage a personal wardrobe in chat: show items, add clothes and shoes, advise sizes for new purchases, suggest daily outfits, pack for trips, and send weather-based reminders."
+category: "Shopping"
+include_in_prompt: true
