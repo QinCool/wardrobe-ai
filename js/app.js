@@ -278,6 +278,14 @@ if (gEvents.length) parts.push('Google 日历今日日程：\n' + eventsToText(g
 parts.push('（Google 日历读取失败：' + e.message + '，已按无日历处理）');
 }
 }
+if (msConnected()) {
+try {
+const oEvents = await fetchMsCalTodayEvents();
+if (oEvents.length) parts.push('Outlook 日历今日日程：\n' + eventsToText(oEvents));
+} catch (e) {
+parts.push('（Outlook 日历读取失败：' + e.message + '，已按无日历处理）');
+}
+}
 return parts.join('\n');
 }
 
@@ -292,11 +300,11 @@ if (useManual) {
 weatherText = '手动输入天气：气温 ' + ($('manual-temp').value.trim() || '未知') + '℃，' +
 ($('manual-rain').checked? '有雨': '无雨') + '。';
 } else {
-if (!city) { out.textContent = '请填写城市，或勾选手动输入天气。'; return;}
-out.textContent = '正在查 ' + city + ' 的天气…';
+if (!city) { out.textContent = '正在用浏览器定位并查天气…'; }
+else { out.textContent = '正在查 ' + city + ' 的天气…'; }
 try {
-const w = await fetchWeather(city);
-weatherText = weatherSummary(w);
+const r = await fetchWeatherSmart(city);
+weatherText = weatherSummary(r.weather) + '。' + r.note;
 } catch (e) {
 out.textContent = '查天气失败：' + e.message + ' 可以勾选「手动输入天气」再试。';
 return;
@@ -335,15 +343,19 @@ const days = Math.round((end - start) / 86400000) + 1;
 if (days < 1 || days > 30) { out.textContent = '日期不对：返回日期应在出发日期之后，且行程不超过 30 天。'; return;}
 out.textContent = '正在查 ' + city + ' 未来 ' + days + ' 天的天气…';
 let fc;
+let tripWeatherNote = '';
 try {
-fc = await fetchWeatherForecast(city, days, start);
+const r = await fetchWeatherForecastSmart(city, days, start);
+fc = r.forecast;
+tripWeatherNote = r.note;
 } catch (e) {
 out.textContent = '查目的地天气失败：' + e.message + ' 可先确认城市写法，或稍后重试。';
 return;
 }
 if (!fc.days.length) { out.textContent = '该出行日期超出天气预报范围（最多未来 16 天），请临近出发再查。'; return;}
 const forecastText = forecastSummary(fc) +
-(fc.days.length < days ? '\n（天气只查到 ' + fc.days.length + ' 天，预报最多未来 16 天，后面的天数请按当地季节气候估算）' : '');
+(tripWeatherNote ? '\n（' + tripWeatherNote + '）' : '') +
+(fc.days.length < days ? '\n（天气只查到 ' + fc.days.length + ' 天，预报天数按所选天气源而定，后面的天数请按当地季节气候估算）' : '');
 out.textContent = 'AI 规划行李中…';
 const occasion = $('trip-occasion').value;
 const notes = $('trip-notes').value.trim();
@@ -396,6 +408,55 @@ model: $('ai-model').value.trim(),
 $('ai-settings-status').textContent = aiConfigured()? '已保存。': '已保存，但 Base URL / Key / 模型还不完整。';
 }
 
+// ---------- 天气设置面板 ----------
+function renderWeatherSettings() {
+const s = loadWeatherSettings();
+window._weatherDraft = s;
+let current = s.source || 'openmeteo';
+const sel = $('weather-source');
+sel.innerHTML = Object.entries(WEATHER_SOURCES)
+.map(([key, p]) => '<option value="' + key + '"' + (current === key? ' selected': '') + '>' + p.label + '</option>')
+.join('');
+const applySource = () => {
+const p = WEATHER_SOURCES[sel.value];
+$('weather-source-hint').textContent = p.hint;
+$('weather-key').value = (s.keys && s.keys[sel.value]) || '';
+$('weather-key').disabled = !p.needsKey;
+$('weather-key').placeholder = p.needsKey? '粘贴该数据源的 Key，只存本地': 'Open-Meteo 免费，无需 Key';
+};
+sel.onchange = () => {
+s.keys = s.keys || {};
+s.keys[current] = $('weather-key').value.trim();
+current = sel.value;
+applySource();
+};
+applySource();
+$('weather-settings-status').textContent = '当前数据源：' + WEATHER_SOURCES[current].label + '。';
+}
+
+function saveWeatherSettingsFromForm() {
+const s = window._weatherDraft || loadWeatherSettings();
+s.source = $('weather-source').value;
+s.keys = s.keys || {};
+s.keys[s.source] = $('weather-key').value.trim();
+saveWeatherSettings(s);
+$('weather-settings-status').textContent = '已保存。当前数据源：' + WEATHER_SOURCES[s.source].label + '。';
+}
+
+// ---------- 邮箱候选邮件列表（Gmail / Outlook 共用渲染） ----------
+function renderMailCandidates(containerId, candidates) {
+const box = $(containerId);
+if (!candidates.length) {
+box.innerHTML = '<p class="hint">没搜到订票确认邮件。可以改粘贴订票文字或截图识别；或确认邮箱里确实有近 90 天的订票邮件。</p>';
+return;
+}
+box.innerHTML = candidates.map((c, i) =>
+'<label style="display:block;margin:6px 0;font-weight:normal;"><input type="checkbox" class="mail-candidate" data-idx="' + i + '" style="width:auto;"> ' +
+'<b>' + escapeHTML(c.subject) + '</b><br><span class="hint">' + escapeHTML(c.from) + ' · ' + escapeHTML(c.date) + '</span><br>' +
+'<span class="hint">' + escapeHTML((c.snippet || '').slice(0, 120)) + '</span></label>'
+).join('');
+}
+
 // ---------- 初始化 ----------
 document.addEventListener('DOMContentLoaded', async () => {
 await seedExampleIfEmpty();
@@ -406,6 +467,7 @@ renderQuickbar();
 renderItems();
 renderSizeInputs($('f-category').value);
 renderAISettings();
+renderWeatherSettings();
 
 // 显示单位切换（cm / inch）：只改显示，库里存的厘米不变
 const unitSel = $('unit-select');
@@ -463,6 +525,13 @@ document.getElementById('items-section').scrollIntoView({ behavior: 'smooth'});
 $('size-advice-btn').onclick = aiSizeAdvice;
 $('outfit-btn').onclick = aiOutfitAdvice;
 $('outfit-manual').onchange = (e) => { $('manual-weather').style.display = e.target.checked? 'block': 'none';};
+// 「用当前位置」：清空城市框，走浏览器定位查天气（定位被拒/超时会提示手动输入城市）
+$('outfit-locate-btn').onclick = () => {
+$('outfit-city').value = '';
+$('outfit-manual').checked = false;
+$('manual-weather').style.display = 'none';
+aiOutfitAdvice();
+};
 
 // 导入 .ics 日历：解析后只取今日日程，场合自动推断
 $('schedule-ics').onchange = async (e) => {
@@ -486,6 +555,8 @@ e.target.value = '';
 };
 
 // Google 日历（只读 OAuth）：处理授权回调 + 连接/断开
+// 邮箱授权回调（state=gmail/msmail）先处理；不是邮箱回调时再走 Google 日历
+const mailRedirect = await mailHandleRedirect();
 const gcalRedirect = await gcalHandleRedirect();
 const gcalSettings = loadCalSettings();
 $('gcal-client-id').value = gcalSettings.gcalClientId || '';
@@ -494,6 +565,10 @@ $('gcal-status').textContent = gcalConnected()
 ? '已连接 Google 日历（只读），授权有效期内可读取今日日程。'
 : '未连接：填 Client ID 后点连接授权。';
 };
+if (mailRedirect && mailRedirect.error) {
+if (mailRedirect.flow === 'gmail') $('gmail-status').textContent = mailRedirect.error;
+else if (mailRedirect.flow === 'msmail') $('ms-status').textContent = mailRedirect.error;
+}
 if (gcalRedirect && gcalRedirect.error) $('gcal-status').textContent = gcalRedirect.error;
 else updateGcalStatus();
 $('gcal-connect-btn').onclick = async () => {
@@ -520,6 +595,11 @@ st.textContent = '正在读 Google 日历…';
 try { all.push(...await fetchGCalEventsRange(60)); }
 catch (e) { st.textContent = '读 Google 日历失败：' + e.message; return; }
 }
+if (msConnected()) {
+st.textContent = '正在读 Outlook 日历…';
+try { all.push(...await fetchMsCalEventsRange(60)); }
+catch (e) { st.textContent = '读 Outlook 日历失败：' + e.message; return; }
+}
 const trips = detectTrips(all);
 if (!trips.length) {
 st.textContent = all.length
@@ -535,6 +615,173 @@ if (t.destination) $('trip-city').value = t.destination;
 st.textContent = '已识别出行：' + t.title + '（' + fmt(t.start) + ' 至 ' + fmt(t.end) + '，共 ' + t.days + ' 天' +
 (t.destination? '，目的地：' + t.destination: '，目的地请手动填写') + '）' +
 (trips.length > 1? '；另有 ' + (trips.length - 1) + ' 个行程未填，可手动改。': '');
+};
+
+// 出差 / 旅行：粘贴订票文字 → AI 提取行程
+$('trip-paste-btn').onclick = async () => {
+const st = $('trip-paste-status');
+const text = $('trip-paste').value.trim();
+if (!text) { st.textContent = '请先粘贴订票确认文字。'; return; }
+st.textContent = 'AI 提取中…';
+try {
+const trip = await aiExtractTripFromText(text);
+fillTripForm(trip);
+st.textContent = '已提取并填好行程（来源：粘贴订票文字），请核对：\n' + tripSummaryText(trip) +
+(!trip.destination || !trip.startDate ? '\n（有字段没提取到，请手动补填）' : '');
+} catch (e) {
+st.textContent = '提取失败：' + e.message;
+}
+};
+
+// 出差 / 旅行：航班号查询
+$('aviationstack-key').value = (loadTripSettings().aviationstackKey || '');
+$('flight-lookup-btn').onclick = async () => {
+const st = $('trip-paste-status');
+const no = $('flight-no').value.trim();
+const key = $('aviationstack-key').value.trim();
+if (!no) { st.textContent = '请先填写航班号，例如 CA1831、BA249、UA857。'; return; }
+const s = loadTripSettings();
+s.aviationstackKey = key;
+saveTripSettings(s);
+st.textContent = '正在查航班 ' + no.toUpperCase() + '…';
+try {
+const trip = await lookupFlight(no);
+fillTripForm(trip);
+st.textContent = '已查到并填好行程（来源：航班号查询），请核对：\n' + tripSummaryText(trip);
+} catch (e) {
+st.textContent = '查航班失败：' + e.message;
+}
+};
+
+// 出差 / 旅行：上传订单截图 → AI 识别行程
+$('trip-screenshot-btn').onclick = async () => {
+const st = $('trip-screenshot-status');
+const file = $('trip-screenshot').files[0];
+if (!file) { st.textContent = '请先选择一张订单截图。'; return; }
+st.textContent = 'AI 识别中…';
+try {
+const dataUrl = await fileToDataURL(file);
+const trip = await aiExtractTripFromImage(dataUrl);
+fillTripForm(trip);
+st.textContent = '已识别并填好行程（来源：截图识别），请核对：\n' + tripSummaryText(trip) +
+(!trip.destination || !trip.startDate ? '\n（有字段没看清，请手动补填）' : '');
+} catch (e) {
+st.textContent = '识别失败：' + e.message;
+}
+};
+
+// Outlook 日历（只读，Microsoft Graph）：连接/断开
+const mailSettings = loadMailSettings();
+$('ms-client-id').value = mailSettings.msClientId || '';
+const updateMsStatus = () => {
+$('ms-status').textContent = msConnected()
+? '已连接 Outlook（只读），授权有效期内可读取日历与邮件。'
+: '未连接：填应用（客户端）ID 后点连接授权。';
+};
+updateMsStatus();
+$('ms-connect-btn').onclick = async () => {
+const clientId = $('ms-client-id').value.trim();
+if (!clientId) { $('ms-status').textContent = '请先填写 Outlook 应用（客户端）ID（见 README「日历与行程」）。'; return; }
+$('ms-status').textContent = '正在跳转 Microsoft 授权页…';
+await msStartAuth(clientId);
+};
+$('ms-disconnect-btn').onclick = () => {
+msDisconnect();
+updateMsStatus();
+};
+
+// 邮箱找订票确认：Gmail 连接/断开/搜索/提取
+$('gmail-client-id').value = mailSettings.gmailClientId || '';
+const updateGmailStatus = () => {
+$('gmail-status').textContent = gmailConnected()
+? '已连接 Gmail（只读），授权有效期内可搜索订票邮件。'
+: '未连接：填 Client ID 后点连接授权。';
+};
+updateGmailStatus();
+$('gmail-connect-btn').onclick = async () => {
+const clientId = $('gmail-client-id').value.trim();
+if (!clientId) { $('gmail-status').textContent = '请先填写 Google OAuth Client ID（见 README「邮箱找订票确认」）。'; return; }
+$('gmail-status').textContent = '正在跳转 Google 授权页…';
+await gmailStartAuth(clientId);
+};
+$('gmail-disconnect-btn').onclick = () => {
+gmailDisconnect();
+window._gmailCandidates = [];
+$('gmail-candidates').innerHTML = '';
+updateGmailStatus();
+};
+$('gmail-search-btn').onclick = async () => {
+const st = $('gmail-search-status');
+st.textContent = '正在搜 Gmail 订票确认邮件…';
+try {
+const list = await searchGmailBookings();
+window._gmailCandidates = list;
+renderMailCandidates('gmail-candidates', list);
+st.textContent = list.length ? '找到 ' + list.length + ' 封候选邮件，勾选后点下方「AI 提取选中邮件的行程」。' : '没搜到订票确认邮件。';
+} catch (e) {
+st.textContent = '搜索失败：' + e.message + ' 可以改粘贴订票文字或截图识别。';
+}
+};
+$('gmail-extract-btn').onclick = async () => {
+const st = $('gmail-extract-status');
+const list = window._gmailCandidates || [];
+const picked = Array.from(document.querySelectorAll('#gmail-candidates .mail-candidate:checked'))
+.map((el) => list[Number(el.dataset.idx)]).filter(Boolean);
+if (!picked.length) { st.textContent = '请先勾选一封或多封邮件。'; return; }
+st.textContent = 'AI 提取中…';
+try {
+const text = picked.map((c) => '【' + c.subject + '】\n发件：' + c.from + '\n' + (c.bodyText || c.snippet || '')).join('\n\n---\n\n');
+const trip = await aiExtractTripFromText(text);
+fillTripForm(trip);
+st.textContent = '已提取并填好行程（来源：Gmail 邮件），请核对：\n' + tripSummaryText(trip) +
+(!trip.destination || !trip.startDate ? '\n（有字段没提取到，请手动补填）' : '');
+} catch (e) {
+st.textContent = '提取失败：' + e.message;
+}
+};
+
+// 邮箱找订票确认：Outlook 邮箱搜索/提取（与 Outlook 日历共用授权）
+$('ms-mail-search-btn').onclick = async () => {
+const st = $('ms-mail-search-status');
+st.textContent = '正在搜 Outlook 订票确认邮件…';
+try {
+const list = await searchOutlookBookings();
+window._msMailCandidates = list;
+renderMailCandidates('ms-mail-candidates', list);
+st.textContent = list.length ? '找到 ' + list.length + ' 封候选邮件，勾选后点下方「AI 提取选中邮件的行程」。' : '没搜到订票确认邮件。';
+} catch (e) {
+st.textContent = '搜索失败：' + e.message + ' 可以改粘贴订票文字或截图识别。';
+}
+};
+$('ms-mail-extract-btn').onclick = async () => {
+const st = $('ms-mail-extract-status');
+const list = window._msMailCandidates || [];
+const picked = Array.from(document.querySelectorAll('#ms-mail-candidates .mail-candidate:checked'))
+.map((el) => list[Number(el.dataset.idx)]).filter(Boolean);
+if (!picked.length) { st.textContent = '请先勾选一封或多封邮件。'; return; }
+st.textContent = 'AI 提取中…';
+try {
+const text = picked.map((c) => '【' + c.subject + '】\n发件：' + c.from + '\n' + (c.bodyText || c.snippet || '')).join('\n\n---\n\n');
+const trip = await aiExtractTripFromText(text);
+fillTripForm(trip);
+st.textContent = '已提取并填好行程（来源：Outlook 邮件），请核对：\n' + tripSummaryText(trip) +
+(!trip.destination || !trip.startDate ? '\n（有字段没提取到，请手动补填）' : '');
+} catch (e) {
+st.textContent = '提取失败：' + e.message;
+}
+};
+
+// 天气设置
+$('weather-save-btn').onclick = saveWeatherSettingsFromForm;
+$('weather-test-btn').onclick = async () => {
+saveWeatherSettingsFromForm();
+$('weather-settings-status').textContent = '测试中…';
+try {
+const r = await fetchWeatherSmart('南京');
+$('weather-settings-status').textContent = '测试成功：' + weatherSummary(r.weather) + '。' + r.note;
+} catch (e) {
+$('weather-settings-status').textContent = '测试失败：' + e.message;
+}
 };
 
 // AI 设置

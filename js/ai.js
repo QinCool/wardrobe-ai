@@ -61,6 +61,39 @@ async function chatCompletion(messages, { temperature = 0.3 } = {}) {
   return content;
 }
 
+// 带图片的对话（vision）：用于截图识别。模型不支持图片时会返回 400 等错误，
+// 调用方要捕获并提示用户改粘贴文字。图片以 data URL 形式发给已配置的 AI 服务商。
+async function chatCompletionVision(textPrompt, imageDataUrl, { temperature = 0.3 } = {}) {
+  const c = getAIConfig();
+  if (!aiConfigured()) throw new Error('请先在「AI 设置」里配置服务商、API Key 和模型。');
+  const res = await fetch(c.baseUrl + '/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + c.apiKey,
+    },
+    body: JSON.stringify({
+      model: c.model,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: textPrompt },
+          { type: 'image_url', image_url: { url: imageDataUrl } },
+        ],
+      }],
+      temperature,
+    }),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error('AI 图片请求失败（HTTP ' + res.status + '）' + (text ? '：' + text.slice(0, 200) : '。当前模型可能不支持图片识别，请换支持 vision 的模型（如 GPT-4o、Gemini）或改粘贴文字。'));
+  }
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content;
+  if (!content) throw new Error('AI 返回内容为空，请重试。');
+  return content;
+}
+
 // 测试连接：先调 /models，失败则用一次最短对话验证
 async function testAIConnection() {
   const c = getAIConfig();

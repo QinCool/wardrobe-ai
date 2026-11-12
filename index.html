@@ -183,11 +183,14 @@
   <section>
     <h2>今日穿搭 · AI 搭配</h2>
     <div class="card">
-      <p class="hint">根据今天的天气和行程，从你的衣柜里搭一套。天气默认用 Open-Meteo（免费、无需 Key）；查不到时可手动输入。</p>
+      <p class="hint">根据今天的天气和行程，从你的衣柜里搭一套。天气来源可在下方「天气设置」里切换（默认 Open-Meteo，免费、无需 Key；也可配彩云、OpenWeatherMap、和风天气的 Key）。城市留空时优先用浏览器定位（需授权，被拒或超时会提示你手动输入城市）；定位不到就手动填城市名；还查不到就勾选「手动输入天气」。</p>
       <div class="row">
         <div>
           <label>城市</label>
-          <input id="outfit-city" placeholder="例如：南京" value="南京">
+          <input id="outfit-city" placeholder="留空用浏览器定位，或输入城市名" value="南京">
+        </div>
+        <div class="narrow" style="align-self:end;">
+          <button type="button" id="outfit-locate-btn" class="narrow">📍 用当前位置</button>
         </div>
         <div class="narrow" style="align-self:end;">
           <label style="display:inline;"><input type="checkbox" id="outfit-manual" style="width:auto;"> 手动输入天气</label>
@@ -242,6 +245,17 @@
           <span class="hint" id="gcal-status"></span>
         </div>
       </details>
+      <details class="settings">
+        <summary>Outlook 日历（可选，只读，Microsoft Graph）</summary>
+        <p class="hint">在 Azure 门户注册一个应用（平台选“单一页面应用程序”），把应用（客户端）ID 填进来，点「连接 Outlook」授权；应用只读你今天的日程与未来行程。详细步骤见 README「日历与行程」一节。注意：需页面跑在 http(s) 上（如 GitHub Pages），直接用 file:// 打开时授权回调无效。</p>
+        <label>Outlook 应用（客户端）ID</label>
+        <input id="ms-client-id" placeholder="例如：xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+        <div class="row" style="margin-top:12px;">
+          <button type="button" id="ms-connect-btn" class="narrow">连接 Outlook</button>
+          <button type="button" id="ms-disconnect-btn" class="narrow">断开</button>
+          <span class="hint" id="ms-status"></span>
+        </div>
+      </details>
       <div class="row" style="margin-top:12px;">
         <button type="button" id="outfit-btn" class="primary narrow">今天穿什么</button>
       </div>
@@ -286,12 +300,94 @@
           <input id="trip-notes" placeholder="例如：第一天见客户，第二天团建爬山">
         </div>
       </div>
+      <details class="settings">
+        <summary>从订票信息生成行程：粘贴文字 / 航班号 / 截图（不用手动填）</summary>
+        <label>粘贴订票确认文字（携程、飞猪、12306、航司、Skyscanner、Expedia、Booking.com 等，中文或英文都行）</label>
+        <textarea id="trip-paste" rows="4" placeholder="粘贴订单确认短信或邮件文字，例如：【携程】您已成功预订 2026-11-20 上海虹桥—北京首都 CA1831……"></textarea>
+        <div class="row" style="margin-top:8px;">
+          <button type="button" id="trip-paste-btn" class="narrow">AI 提取行程</button>
+          <span class="hint" id="trip-paste-status"></span>
+        </div>
+        <label style="margin-top:12px;">航班号查询（国内 / 国际航班，如 CA1831、BA249、UA857）</label>
+        <div class="row">
+          <div><input id="flight-no" placeholder="例如：CA1831"></div>
+          <div><input id="aviationstack-key" type="password" placeholder="AviationStack Key（免费档每月 100 次）"></div>
+          <div class="narrow" style="align-self:end;"><button type="button" id="flight-lookup-btn" class="narrow">查航班</button></div>
+        </div>
+        <p class="hint">航班查询用 AviationStack（aviationstack.com，免费档每月 100 次）。注意：免费档只支持 HTTP，从 HTTPS 页面（GitHub Pages）访问会被浏览器拦截；本地用 http://localhost 打开可用，或改粘贴文字 / 截图识别。</p>
+        <label style="margin-top:12px;">上传订单截图（12306、航旅纵横、携程、Skyscanner、Expedia 等）</label>
+        <input type="file" id="trip-screenshot" accept="image/*">
+        <div class="row" style="margin-top:8px;">
+          <button type="button" id="trip-screenshot-btn" class="narrow">AI 识别截图并生成行程</button>
+          <span class="hint" id="trip-screenshot-status"></span>
+        </div>
+        <p class="hint">截图识别需要支持图片（vision）的 AI 模型，如 GPT-4o、Gemini；模型不支持时会明确提示，改粘贴文字即可。图片只在浏览器本地处理后发给已配置的 AI 服务商，不进仓库。</p>
+      </details>
       <div class="row" style="margin-top:12px;">
         <button type="button" id="trip-detect-btn" class="narrow">从日历识别出行</button>
         <button type="button" id="trip-btn" class="primary narrow">生成行李与穿搭建议</button>
         <span class="hint" id="trip-detect-status"></span>
       </div>
       <div class="ai-output" id="trip-output"></div>
+    </div>
+  </section>
+
+  <!-- 邮箱找订票确认 -->
+  <section>
+    <h2>邮箱找订票确认</h2>
+    <div class="card">
+      <p class="hint">接 Gmail 或 Outlook 邮箱（只读），按关键词搜订票确认邮件，勾选后由 AI 提取行程。不想接邮箱时，直接用上方「粘贴订票文字」或「截图识别」代替。邮件内容只在浏览器本地处理，不上传、不进仓库；不改、不删任何邮件。支持国内外平台：携程、飞猪、12306、Skyscanner、Expedia、Kayak、Google Flights、Trip.com、CheapOair、Booking.com、Agoda、Hotels.com、Airbnb、Hostelworld、Trainline、Amtrak、Eurail、Deutsche Bahn、MakeMyTrip 等。</p>
+      <details class="settings">
+        <summary>Gmail（只读）</summary>
+        <p class="hint">在 Google Cloud Console 建一个 OAuth 客户端（Web 应用类型），把 Client ID 填进来，点「连接 Gmail」授权只读邮件权限（gmail.readonly）。详细步骤见 README「邮箱找订票确认」一节。注意：需页面跑在 http(s) 上，直接用 file:// 打开时授权回调无效。</p>
+        <label>Google OAuth Client ID</label>
+        <input id="gmail-client-id" placeholder="xxx.apps.googleusercontent.com">
+        <div class="row" style="margin-top:12px;">
+          <button type="button" id="gmail-connect-btn" class="narrow">连接 Gmail</button>
+          <button type="button" id="gmail-disconnect-btn" class="narrow">断开</button>
+          <span class="hint" id="gmail-status"></span>
+        </div>
+        <div class="row" style="margin-top:12px;">
+          <button type="button" id="gmail-search-btn" class="narrow">搜订票确认邮件</button>
+          <span class="hint" id="gmail-search-status"></span>
+        </div>
+        <div id="gmail-candidates" style="margin-top:8px;"></div>
+        <div class="row" style="margin-top:8px;">
+          <button type="button" id="gmail-extract-btn" class="narrow">AI 提取选中邮件的行程</button>
+          <span class="hint" id="gmail-extract-status"></span>
+        </div>
+      </details>
+      <details class="settings">
+        <summary>Outlook 邮箱（只读，Microsoft Graph，与 Outlook 日历共用授权）</summary>
+        <p class="hint">用上面「Outlook 日历」里同一个应用（客户端）ID 即可（权限需包含 Mail.Read）；点「连接 Outlook」授权后，在这里搜邮件。详细步骤见 README「邮箱找订票确认」一节。</p>
+        <div class="row" style="margin-top:12px;">
+          <button type="button" id="ms-mail-search-btn" class="narrow">搜订票确认邮件</button>
+          <span class="hint" id="ms-mail-search-status"></span>
+        </div>
+        <div id="ms-mail-candidates" style="margin-top:8px;"></div>
+        <div class="row" style="margin-top:8px;">
+          <button type="button" id="ms-mail-extract-btn" class="narrow">AI 提取选中邮件的行程</button>
+          <span class="hint" id="ms-mail-extract-status"></span>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- 天气设置 -->
+  <section>
+    <h2>天气设置</h2>
+    <div class="card">
+      <p class="hint">每日穿搭和出差预报的天气来源。默认用 Open-Meteo（免费、无需 Key）。选其他源需要填自己的 Key，Key 只存浏览器 localStorage。回退链：所选源未配 Key 或请求失败 → 自动回退到 Open-Meteo；城市留空时优先用浏览器定位（需授权，被拒或超时会提示你手动输入城市）；还查不到就勾选「手动输入天气」。</p>
+      <label>天气数据源</label>
+      <select id="weather-source"></select>
+      <p class="hint" id="weather-source-hint"></p>
+      <label>API Key（Open-Meteo 不需要）</label>
+      <input id="weather-key" type="password" placeholder="所选数据源的 Key，只存本地">
+      <div class="row" style="margin-top:12px;">
+        <button type="button" id="weather-save-btn" class="narrow">保存天气设置</button>
+        <button type="button" id="weather-test-btn" class="narrow">测试天气源</button>
+        <span class="hint" id="weather-settings-status"></span>
+      </div>
     </div>
   </section>
 
@@ -329,6 +425,8 @@
 <script src="js/calendar.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/weather.js"></script>
+<script src="js/trip.js"></script>
+<script src="js/mail.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

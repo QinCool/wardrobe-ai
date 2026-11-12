@@ -140,7 +140,7 @@ bytes.forEach((b) => { bin += String.fromCharCode(b);});
 return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// 开始授权：生成 PKCE 校验串后跳 Google 授权页
+// 开始授权：生成 PKCE 校验串后跳 Google 授权页（state=gcal，与邮箱授权回调区分）
 async function gcalStartAuth(clientId) {
 const verifier = randomString(64);
 const challenge = await sha256Base64Url(verifier);
@@ -158,13 +158,16 @@ code_challenge: challenge,
 code_challenge_method: 'S256',
 access_type: 'offline',
 prompt: 'consent',
+state: 'gcal',
 });
 location.href = GCAL_AUTH_URL + '?' + params.toString();
 }
 
-// 处理 OAuth 回调?code=...（页面加载时调用一次）
+// 处理 OAuth 回调?code=...（页面加载时调用一次；state 是 gmail/msmail 时返回 null，交给邮箱授权处理）
 async function gcalHandleRedirect() {
 const params = new URLSearchParams(location.search);
+const state = params.get('state');
+if (state && state !== 'gcal') return null;
 const code = params.get('code');
 const err = params.get('error');
 if (err) return { error: 'Google 授权被拒绝或失败：' + err};

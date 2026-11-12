@@ -15,8 +15,9 @@ No backend, no account, no sign-up. All data lives in your browser (localStorage
 - **AI-assisted entry**: paste size-chart text or a product link and the AI parses it into the size fields automatically; review and save. If parsing fails, the original text is kept so you can edit it manually. Supports domestic Chinese platforms (Taobao / JD.com / Pinduoduo / Douyin) and US / international sites (Amazon / Nike / adidas / Uniqlo US / Gap, and more). Overseas size charts are often in inches — the AI converts them to centimeters automatically and notes the original unit.
 - **AI size advice**: paste a new product's size chart and the AI compares it, measurement by measurement, against well-fitting items of the same category in your wardrobe, tells you which size to buy, and flags ambiguous conventions (e.g. whether a chest measurement is half-circumference or full circumference). You can choose a domestic or US/international source; for shoes it recommends across the US / EU / UK / JP systems based on foot length.
 - **Shoe-size converter**: look up the US / EU / UK / JP conversion table (men's / women's) by foot length; when adding shoes you can also auto-fill all five size fields from your foot length with one click.
-- **Daily outfit**: picks an outfit from your wardrobe based on today's weather **and** today's schedule. Weather comes from Open-Meteo by default (free, no API key needed). Schedule can be picked by occasion, pasted as text, imported from an .ics calendar file, or read from Google Calendar (read-only). If the weather can't be fetched, you can enter the temperature and whether it's raining manually.
-- **Business trips / travel**: enter a destination and departure / return dates and get a daily outfit for each day at the destination (based on local weather and plans) plus a packing list — picked only from your wardrobe, favoring versatile pieces with minimal duplication, with a packing reason given for each item. Trips can also be detected automatically from your calendar.
+- **Daily outfit**: picks an outfit from your wardrobe based on today's weather **and** today's schedule. Weather supports multiple sources (Open-Meteo by default — free, no API key needed; or Caiyun / OpenWeatherMap / QWeather with your own key). Leaving the city blank prefers browser geolocation, and a failed location falls back to manual city entry. Schedule can be picked by occasion, pasted as text, imported from an .ics calendar file, or read from Google / Outlook Calendar (read-only). If the weather can't be fetched, you can enter the temperature and whether it's raining manually.
+- **Business trips / travel**: enter a destination and departure / return dates and get a daily outfit for each day at the destination (based on local weather and plans) plus a packing list — picked only from your wardrobe, favoring versatile pieces with minimal duplication, with a packing reason given for each item. Trips can be detected automatically from your calendar, or generated from pasted booking text, a flight-number lookup, a screenshot, or booking-confirmation emails.
+- **Find booking confirmations in your mailbox**: connect Gmail / Outlook mail (read-only) to search for booking-confirmation emails and have the AI extract a trip from the ones you pick. Covers domestic and international flight, hotel, and train platforms.
 - **JSON import / export**: add many items at once, back up, or migrate to another device.
 - **AI settings**: works with any OpenAI-compatible API — just paste your own key. Presets for DeepSeek, OpenAI, Qwen, Kimi, GLM, Gemini, and Muse.
 
@@ -126,6 +127,20 @@ Notes:
 - API-key access only works for public calendars and can't read private schedules, so this app uses OAuth instead of an API key.
 - The page must run over http(s) (e.g. GitHub Pages or a local `python3 -m http.server`). Opening it directly with file:// makes the authorization callback URL invalid, so connection failing in that case is expected.
 
+### 4. Outlook Calendar (read-only, self-configured)
+
+Steps:
+
+1. Open the [Azure portal](https://portal.azure.com/) → App registrations → New registration → Authentication → Add a platform → **Single-page application**, with the redirect URI set to your page URL — for example, after deploying to GitHub Pages it is `https://<your-username>.github.io/wardrobe-ai/`.
+2. API permissions → Add a permission → Microsoft Graph → Delegated permissions → check **Calendars.Read** (read calendar; if you also want to find booking confirmations in your mailbox, check **Mail.Read** too — mail and calendar share the same app).
+3. Copy the **Application (client) ID**, paste it into the page's "Outlook Calendar" field, click "Connect Outlook", and approve read-only calendar access on Microsoft's authorization page.
+4. Once authorized, you'll be redirected back to the page. Clicking "What to wear today" will then read today's events from your Outlook calendar, and "Detect trips from calendar" will also look for upcoming business trips / travel there.
+
+Notes:
+
+- Authorization uses the OAuth authorization-code + PKCE flow, with only the `Calendars.Read` scope (read-only calendar). The token and refresh token are stored only in the browser's localStorage; clicking "Disconnect" deletes them.
+- The page must run over http(s) (e.g. GitHub Pages or a local `python3 -m http.server`). Opening it directly with file:// makes the authorization callback URL invalid, so connection failing in that case is expected.
+
 ### Privacy
 
 Schedule, calendar events, and Google credentials are stored only in the browser's localStorage by default — never uploaded to any server, never committed to the repo. After switching devices or clearing browser data, you'll need to import or reconnect again.
@@ -144,13 +159,68 @@ In the "Business trip / travel" section, enter one trip and the app gives two ki
 
 ### Weather & range
 
-- Destination weather comes from Open-Meteo: a multi-day forecast from the departure date (daily high / low, precipitation probability, conditions) for the destination city.
-- Forecasts go up to 16 days ahead: if the trip starts beyond that, the app will suggest checking again closer to departure. Trips can be up to 30 days long; days beyond the forecast range should be estimated from the local seasonal climate.
+- Destination weather is fetched from the source selected in "Weather settings" (Open-Meteo by default), a multi-day forecast from the departure date (daily high / low, precipitation probability, conditions) for the destination city.
+- Forecast horizons differ by source: Open-Meteo up to 16 days ahead, QWeather 7 days, OpenWeatherMap 5 days, Caiyun as returned. If the trip starts beyond the selected source's range, the app will suggest checking again closer to departure. Trips can be up to 30 days long; days beyond the forecast range should be estimated from the local seasonal climate.
 - Enter only the city name for the destination (e.g. "Shanghai", "Tokyo") — no district or venue names, or the lookup may fail.
 
 ### Manual fallback
 
 If the calendar has no trip, or nothing is detected, just fill in the destination and dates manually. If the weather lookup fails, clicking "Generate" will prompt you to try a different spelling of the city name or retry later — other features are unaffected.
+
+## Trip sources
+
+Besides filling in the destination and dates manually, a trip can be generated from any of these sources. All of them produce the same trip object (destination, departure / return dates, transport, hotel, notes), which then flows into the existing trip process (destination weather + daily outfits + packing list).
+
+| Source | How to use | Notes |
+| --- | --- | --- |
+| Manual entry | Fill in the destination and departure / return dates in the "Business trip / travel" section | Most reliable |
+| Calendar detection | Click "Detect trips from calendar" to find multi-day trips in your .ics / Google Calendar / Outlook Calendar | See "Calendar & schedule" |
+| Paste booking text | In "Generate a trip from booking info", paste the booking-confirmation SMS or email text (Ctrip, Fliggy, 12306, airline apps, Skyscanner, Expedia, Booking.com, etc.) and click "AI extracts trip" | No API integration — works with any platform; fields that can't be extracted are left blank, and wrong ones can be corrected manually |
+| Flight-number lookup | Enter a flight number (e.g. CA1831, BA249, UA857) + an AviationStack key and click "Look up flight" | Free tier: 100 requests/month, key from aviationstack.com; the free tier only supports HTTP, so requests from an HTTPS page (GitHub Pages) are blocked by the browser — open the page over http://localhost instead, or use pasted text / screenshot; generally only recent / same-day flights can be found |
+| Screenshot recognition | Upload an order screenshot (12306, airline apps, Ctrip, Skyscanner, Expedia, etc.) and click "AI reads the screenshot and generates a trip" | Needs a vision-capable AI model (e.g. GPT-4o, Gemini); if the model doesn't support images, you'll be told to paste the text instead |
+| Find booking confirmations in your mailbox | See the next section, "Find booking confirmations in your mailbox" | Gmail / Outlook, read-only |
+
+Note: most booking platforms, domestic and international, offer no public API for individual users, so email, pasted text, and screenshots are the main paths. This app does not connect directly to any booking platform's account, does not store account passwords, and does not pretend to connect to those platforms.
+
+## Find booking confirmations in your mailbox
+
+In the "Find booking confirmations in your mailbox" section, connect Gmail or Outlook mail (read-only) to search for booking-confirmation emails from the last 90 days. Candidates are listed — tick the ones to use and let the AI extract a trip. If you'd rather not connect a mailbox, use "Paste booking text" or "Screenshot recognition" instead.
+
+### Supported platforms (sender keywords)
+
+- **Flights**: Ctrip, Fliggy, 12306, Air China, China Southern, China Eastern, Hainan Airlines, XiamenAir, Skyscanner, Expedia, Kayak, Google Flights, Trip.com, CheapOair
+- **Hotels**: Booking.com, Agoda, Expedia, Hotels.com, Airbnb, Hostelworld, Ctrip, Fliggy
+- **Trains**: 12306, Trainline, Amtrak, Eurail, Deutsche Bahn
+- **General**: Trip.com (Ctrip's international version), MakeMyTrip
+
+Search keywords: 机票, 酒店, 行程单, flight, hotel, booking, itinerary, confirmation. Candidates whose sender domain is on the list above are ranked first; others are still listed.
+
+### Gmail (read-only)
+
+Steps:
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/), create a project → enable the **Gmail API** → create credentials → **OAuth client ID** (application type: **Web application**).
+2. In the client's "Authorized redirect URIs", add your page URL — for example, after deploying to GitHub Pages it is `https://<your-username>.github.io/wardrobe-ai/`.
+3. Paste the Client ID into the page's "Gmail" field, click "Connect Gmail", and approve read-only mail access (`gmail.readonly`) on Google's authorization page.
+4. Click "Search for booking-confirmation emails", tick the ones to use, then click "AI extracts a trip from the selected emails" and review the result.
+
+Notes: authorization uses the OAuth authorization-code + PKCE flow, with only the `gmail.readonly` scope (read-only mail). The token and refresh token are stored only in the browser's localStorage; clicking "Disconnect" deletes them. No email is modified or deleted.
+
+### Outlook mail (read-only, Microsoft Graph, shares authorization with Outlook Calendar)
+
+Steps:
+
+1. Open the [Azure portal](https://portal.azure.com/) → App registrations → New registration → Authentication → Add a platform → **Single-page application**, with the redirect URI set to your page URL, e.g. `https://<your-username>.github.io/wardrobe-ai/`.
+2. API permissions → Add a permission → Microsoft Graph → Delegated permissions → check **Mail.Read** (read mail) and **Calendars.Read** (read calendar). Grant admin consent if asked (personal accounts usually work directly).
+3. Copy the **Application (client) ID** and paste it into the page's "Outlook Calendar" field (mail and calendar share this one ID), then click "Connect Outlook" to authorize.
+4. In the "Outlook mail" section, click "Search for booking-confirmation emails", tick the ones to use, then click "AI extracts a trip from the selected emails".
+
+Notes: authorization uses the OAuth authorization-code + PKCE flow. The token and refresh token are stored only in the browser's localStorage; clicking "Disconnect" deletes them. No email is modified or deleted. The page must run over http(s); opening it directly with file:// makes the authorization callback URL invalid.
+
+### Privacy & fallback
+
+- Read-only access: no email is modified or deleted; message contents are only processed locally in the browser — never uploaded, never committed to the repo.
+- If the mailbox can't be connected or nothing is found, the message will tell you to paste the booking text or use screenshot recognition instead.
 
 ## AI settings
 
@@ -179,7 +249,31 @@ Notes:
 
 ## Weather
 
-Daily outfit weather comes from Open-Meteo (`open-meteo.com`, free, no API key needed): the city name is resolved to coordinates first, then the day's high / low, precipitation probability, and conditions are fetched. If the network is down or the city can't be found, tick "Enter weather manually" and fill in the temperature and whether it's raining.
+Daily outfit and trip-forecast weather support multiple sources, switchable in the page's "Weather settings". Keys are stored only in the browser's localStorage — never uploaded, never committed to the repo.
+
+| Source | Key required | Where to get a key | Forecast horizon | Notes |
+| --- | --- | --- | --- | --- |
+| Open-Meteo (default) | No | — | Up to 16 days ahead | Free, default source |
+| Caiyun | Yes | caiyunapp.com (Caiyun open platform) | As returned | Realtime + daily forecast |
+| OpenWeatherMap | Yes | openweathermap.org | Up to 5 days ahead | Free tier: 5-day forecast |
+| QWeather | Yes | qweather.com (QWeather developer platform) | Up to 7 days ahead | No daily precipitation probability |
+
+### Location fallback chain
+
+Weather follows this order for location and data. Every failed step tells you plainly what happened — nothing fails silently:
+
+1. **Use your configured source**: if you picked a source in "Weather settings" and entered its key, that source is used.
+2. **No key → fall back to Open-Meteo**: if the selected source has no key configured, or its request fails, the app automatically falls back to Open-Meteo (no key needed) and says so in the result.
+3. **City left blank → browser geolocation**: with the city field empty, the app first tries browser geolocation (navigator.geolocation) for coordinates, then calls Open-Meteo. Geolocation needs your permission; a denial, timeout, or unavailability produces a clear message (e.g. "Location was denied — please enter a city manually").
+4. **Enter a city manually**: type a city name in the city field and the app resolves it to coordinates with Open-Meteo's geocoding API (no key needed). Use just the city name — no district or venue names.
+5. **Still nothing → enter the weather manually**: tick "Enter weather manually" and fill in the temperature and whether it's raining.
+
+### Notes per source
+
+- Caiyun: APIs are `api.caiyunapp.com/v2.6/{key}/{lng},{lat}/realtime.json` (realtime) and `/daily.json` (daily). The daily forecast includes high / low, precipitation probability, and conditions (skycon values translated to Chinese).
+- OpenWeatherMap: uses the 5-day forecast API (`api.openweathermap.org/data/2.5/forecast`), aggregated per day into high / low, maximum precipitation probability, and the most common condition. Days beyond 5 can't be fetched — the UI says so.
+- QWeather: uses the 7-day forecast API (`api.qweather.com/v7/weather/7d`). It provides no daily precipitation probability, so that field is left empty.
+- All sources are normalized to "high / low, precipitation probability, conditions" before the outfit logic uses them. When sources return different fields, what each source actually returned is what you get.
 
 ## Run locally / deploy
 
@@ -212,7 +306,9 @@ wardrobe-ai/
 │   ├── units.js                # Unit conversion: inch/cm, shoe sizes US/EU/UK/JP, currencies, store detection
 │   ├── calendar.js             # Calendar: .ics parsing, occasion inference, Google Calendar OAuth (read-only)
 │   ├── ai.js                   # AI client: OpenAI-compatible calls, provider presets, connection test
-│   ├── weather.js              # Weather: Open-Meteo
+│   ├── weather.js              # Weather: Open-Meteo / Caiyun / OpenWeatherMap / QWeather, multi-source with fallback chain
+│   ├── trip.js                 # Trip sources: pasted booking text, flight-number lookup, screenshot recognition
+│   ├── mail.js                 # Mailbox: Gmail / Outlook mail search, Outlook Calendar (read-only OAuth)
 │   └── app.js                  # Main logic: rendering, entry, AI parsing, size advice, outfits
 ├── data/example-wardrobe.json  # Example data (placeholder)
 ├── README.md                   # Chinese README
