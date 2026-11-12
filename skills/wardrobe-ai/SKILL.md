@@ -1,6 +1,6 @@
 # Wardrobe AI
 
-Use this skill when the user talks about their clothes, shoes, sizes, outfits, or packing. It covers five jobs in chat: showing the wardrobe, adding items, advising sizes for a new purchase, suggesting a daily outfit, and packing for a trip. It also covers proactive reminders. The web app is the visual board and the data store. The chat is where the user asks and where reminders arrive. The user never has to open the web page to check a reminder.
+Use this skill when the user talks about their clothes, shoes, sizes, outfits, or packing. Its core job is proactive reminders: every morning it sends an outfit suggestion in chat without the user asking first. It also covers showing the wardrobe, adding items, advising sizes for a new purchase, suggesting a daily outfit when asked, and packing for a trip. The web app is the visual board only. The chat is where the user asks and where reminders arrive. The user never has to open the web page to check a reminder.
 
 ## Know the wardrobe
 
@@ -8,13 +8,23 @@ Use this skill when the user talks about their clothes, shoes, sizes, outfits, o
 - Treat the JSON file as the single source of truth. Never invent an item that is not in the file. Never invent a size that is not in the file.
 - Keep the file current. When the user adds, edits, or removes an item in chat, update the file in the same turn and confirm the change with the new numbers.
 - Sync with the web app through JSON export and import. The web app stores the same format in the browser. When the user changes items in the web app, ask them to export the JSON and send it to you, then replace the file. When you change items in chat, offer the updated JSON for import into the web app.
-- Store the user's real wardrobe file outside any public repository. The public template ships only placeholder example data. Never put the user's real items, photos, or sizes into a public repo.
+- Keep every configuration with the Personal Agent, not in the website. The city, the preferred weather source, the reminder time, and any other setting live in the agent's memory or in the wardrobe JSON profile. Never ask the user to configure the website. The website has no settings.
+- Run every call through the user's own Personal Agent. Weather lookups, calendar reads, email reads, size advice, and outfit suggestions are all executed by the agent. The website makes no calls and reads nothing on its own.
+
+## Remind proactively every morning
+
+- Send the outfit reminder every morning in chat without the user asking first. This is the core job of the skill, not an extra. The user never asks for it. You push it.
+- Build every reminder from three things: today's weather, today's schedule, and the wardrobe file. Check the weather through the weather service the user's Personal Agent already has connected. Check the schedule through the calendar the user's Personal Agent already has connected.
+- Keep each reminder short: the weather, the outfit as a short list with one reason per piece, and one line on why it fits the day. Pick only from items in the wardrobe file. Never suggest an item the user does not own.
+- Send it at the user's usual morning time. Do not wait for the user to ask first and do not ask whether they want it.
+- Remind again before a trip with the packing list. Remind when the season turns and a stored layer becomes useful again.
+- Do not repeat a reminder the user already saw or dismissed. Do not chase a thread the user did not pick up.
 
 ## Show the wardrobe
 
 - When the user asks what they own, list the wardrobe grouped by category in this order: tops, pants, shoes. Keep each line short with name, size, fit, and one key measurement.
 - Lead with a one line summary of counts, such as how many tops, pants, and pairs of shoes.
-- Offer the wardrobe as a visual board when the user wants to browse instead of read a list. Build it with the artifact tools from the JSON file and hand over the link in the same message.
+- Offer the wardrobe as a visual board when the user wants to browse instead of read a list. In Muse, build it with the artifact tools from the JSON file and hand over the card in the same message. In another Personal Agent that has no board card, give the website link instead and let the user open the same board in the browser. Both show the same items and the same card information.
 - When the user asks about one category only, show only that category.
 - When the user asks whether they own something specific, search the file by name, brand, or category and answer from the file alone.
 
@@ -37,14 +47,12 @@ Use this skill when the user talks about their clothes, shoes, sizes, outfits, o
 - Say plainly when the chart is missing, unreadable, or the product page cannot be reached. Offer the next option instead of guessing, such as asking the user to paste the chart text or to send a screenshot.
 - Never recommend a size from a generic size table. Use only the wardrobe measurements and the product official chart.
 
-## Suggest a daily outfit and send reminders
+## Suggest a daily outfit when the user asks
 
-- Check the weather first. Use the weather connector for the user's city and ask the user for the city when it is unknown. Fall back to the browser geolocation when the user allows it, then to manual city input.
-- Check the day schedule when the user connects a calendar. Match the outfit to the occasion, such as work, a meeting, sport, formal, casual, or a date.
+- Check the weather first. Use the weather service the user's Personal Agent already has connected. Ask the user for the city when it is unknown. Fall back to the browser geolocation when the user allows it, then to manual city input.
+- Check the day schedule through the calendar the user's Personal Agent already has connected. Match the outfit to the occasion, such as work, a meeting, sport, formal, casual, or a date.
+- Never ask the user to apply for a separate weather key or to register an OAuth app for weather, calendar, or email. Use whatever permissions the Personal Agent already has. When a permission is missing, say so and offer a route that needs none, such as pasted booking text or a screenshot.
 - Pick only from items in the wardrobe file. Give the outfit as a short list with one reason per piece. Never suggest an item the user does not own.
-- Send the reminder in chat in the morning without the user asking. Keep it short: weather, the outfit, and one line on why it fits the day.
-- Remind again before a trip with the packing list. Remind when the season turns and a stored layer becomes useful again.
-- Do not repeat a reminder the user already saw or dismissed. Do not chase a thread the user did not pick up.
 
 ## Pack for a trip
 

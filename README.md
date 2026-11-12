@@ -10,14 +10,32 @@
 
 > English summary: chat-first personal wardrobe. Ask your AI assistant for outfits, sizes and packing; the site is just the visual board. No backend, no account, data lives only in your own Personal Agent (the wardrobe JSON file your Agent can read); the site holds no data.
 
+**在线演示：** https://qincool.github.io/wardrobe-ai/
+
+## 截图
+
+每天早上主动提醒（核心功能）：
+
+![每天早上主动提醒：Muse 根据天气和行程主动发来穿搭建议](docs/screenshots/chat-reminder.png)
+
+问一句就有答案：
+
+![在聊天里问“明天穿什么”，助手给穿搭建议](docs/screenshots/chat-outfit.png)
+
+衣柜看板（网站只做展示）：
+
+![衣柜看板](docs/screenshots/board.png)
+
+截图里是项目示例数据；提醒那张的天气是 2026-11-12 南京实测（Open-Meteo），行程为示例。
+
 ## 用法：直接在聊天里问
 
 本项目配有一个 Skill（`skills/wardrobe-ai/`），把它装进你的 Personal Agent，就能在聊天里用：
 
+- **每日穿搭（核心功能）**：每天早上助手主动在聊天里提醒你，不用你先问：今天天气、穿哪件、为什么。
 - **看衣柜**：问“我的衣柜有哪些衣服”，用 Muse 时助手把衣柜展示成一个看板（Muse 的 artifact 看板卡片），直接在聊天里打开看；用其他 AI（豆包、DeepSeek、ChatGPT 等）时，助手直接给网站链接，你打开网页看同一块看板。
 - **加衣服鞋子**：发购买截图或商品链接，或者口头说一声，助手去平台查官方尺码表，核对后写进衣柜。
 - **买新衣服问尺码**：发商品链接或尺码表，助手拿你衣柜里合身单品的实测数据逐项对照，告诉你买哪个码。
-- **每日穿搭**：每天早上助手直接在聊天里提醒你：今天天气、穿哪件、为什么。
 - **出差 / 旅行**：说一声目的地和日期，助手按当地天气给每天穿搭 + 行李清单。
 
 你不需要每天打开这个网站看提醒。网站只是衣柜的看板。

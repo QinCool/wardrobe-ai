@@ -10,14 +10,32 @@ No backend, no account, no sign-up. Data lives only in your own Personal Agent (
 
 > 中文摘要：聊天为前台、网站为后台的个人衣柜。加衣服、问尺码、穿搭提醒、出差行李都在 Personal Agent 聊天里完成；网站只做衣柜展示看板。无后端、无账号，数据只存在你自己的 Personal Agent 手里；网站不持有数据。
 
+**Live demo:** https://qincool.github.io/wardrobe-ai/
+
+## Screenshots
+
+Proactive reminder every morning (the core feature):
+
+![Proactive morning reminder: Muse sends an outfit suggestion based on the weather and the day's schedule](docs/screenshots/chat-reminder-en.png)
+
+Ask, and the answer comes:
+
+![Ask "what should I wear tomorrow?" in chat and get an outfit suggestion](docs/screenshots/chat-outfit-en.png)
+
+The wardrobe board (the site only displays):
+
+![Wardrobe board](docs/screenshots/board.png)
+
+Screenshots use the project's example data. The weather in the reminder is real Nanjing data for 2026-11-12 (Open-Meteo); the schedule is an example.
+
 ## How to use: just ask in chat
 
 This project ships a Skill (`skills/wardrobe-ai/`). Install it in your Personal Agent and use it in chat:
 
+- **Daily outfit (the core feature)**: every morning the assistant proactively reminds you in chat, no need to ask first: today's weather, what to wear, and why.
 - **Show the wardrobe**: ask "what clothes do I have". With Muse, the assistant shows the wardrobe as a board (a Muse artifact board card) right in the chat. With other AIs (Doubao, DeepSeek, ChatGPT, and others), the assistant gives you the website link and you open the page to see the same board.
 - **Add clothes and shoes**: send a purchase screenshot or a product link, or just say it in words. The assistant looks up the official size chart on the platform, checks the numbers with you, then records the item.
 - **Ask for a size before buying**: send a product link or a size chart. The assistant compares it against the measured data of the well-fitting items in your wardrobe and tells you which size to buy.
-- **Daily outfit**: every morning the assistant reminds you in chat: today's weather, what to wear, and why.
 - **Business trips / travel**: give the destination and dates, and the assistant suggests a daily outfit and a packing list based on the local weather.
 
 You never need to open this website every day to check reminders. The website is only the board.
